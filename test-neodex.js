@@ -16,7 +16,7 @@ module.exports = async ({ pj, sleep }) => {
   const l = await label();
   if (!/sur 2 tirs/.test(l)) throw new Error('deux tirs attendus : « ' + l + ' »');
   if (process.env.NEO_SHOTS) {  // un vrai panier : calcule un tir qui marque avec la physique du jeu, règle angle et force au clavier, tire
-    const src = require('fs').readFileSync(require('path').join(process.env.NEO_LOCAL || __dirname, 'index.js'), 'utf8');
+    const src = require('fs').readFileSync(require('path').join((process.env.NEO_LOCAL || '').split(';').find(d => d.endsWith('-panier')) || __dirname, 'index.js'), 'utf8');
     const BK = eval('(' + src.match(/const BK = (\{[^;]*\});/)[1] + ')'), bkHoop = eval('(' + src.match(/const bkHoop = ([^\n]*);/)[1] + ')'), bkVel = eval('(' + src.match(/const bkVel = ([^\n]*);/)[1] + ')');
     const bkStep = eval('(' + src.match(/function bkStep[\s\S]*?\n}\n/)[0] + ')');
     const m = /Angle (\d+)°, force ([\d.]+), tireur à (\d+)/.exec(await label()), x = +m[3];
