@@ -1,0 +1,22 @@
+{
+  "id": "neodex.panier",
+  "name": "Panier",
+  "version": "1.0.0",
+  "author": "NDesumeur",
+  "description": "Jeu d'adresse : du basket en 60 secondes dans un gymnase en pixel art. Tire en arrière pour viser, le ballon rebondit vraiment sur le cercle et la planche. Paniers à 2 et 3 points, bonus sans toucher le cercle, séries EN FEU qui comptent double et un panier qui se met à bouger. Meilleur score et plus longue série.",
+  "icon": "icon.png",
+  "entry": "index.js",
+  "view": "panier",
+  "neobase": ">=4.0.0",
+  "type": "app",
+  "category": "Jeux",
+  "syncMode": "progression",
+  "syncInfo": "Record.",
+  "mobile": false,
+  "system": false,
+  "dependencies": {},
+  "sdk": "2.1.0",
+  "permissions": [
+    "storage"
+  ]
+}
