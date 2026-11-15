@@ -19,6 +19,15 @@ A pixel art skill game: basketball in 60 seconds in a gym. Aim, shoot, score.
 - From **16 points**, the hoop moves up and down; after 40 points, it moves faster.
 - The shooter moves after every shot. A shot released before the buzzer still counts.
 
+## The crowd and the golden ball
+
+- After each basket, the **crowd** stands up and jumps in the stands; when you are **ON FIRE**, it stays up, arms raised, and cheers.
+- From time to time, the shooter gets a **golden ball** (marked **×3**): its basket is worth **3 times more**, on top of the ON FIRE bonus.
+
+## Full screen
+
+The **Full screen** button fills the whole screen with the court (Escape to leave). Otherwise the game takes all the height the window leaves.
+
 ## Stats
 
 The Bests panel keeps your **best score**, the number of **games**, **baskets** and your **longest streak**.

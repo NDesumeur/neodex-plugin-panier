@@ -5,13 +5,15 @@ const HTML = `<div class="appWrap wide">
   <div class="gMain"><div class="gameBox"><canvas id="bkCanvas" width="160" height="200" role="img" aria-label="Panier"></canvas></div>
     <div class="gSide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="bkStats"></div></div>
-      <div class="row"><button class="btn main" id="bkNew">NOUVELLE PARTIE</button></div>
-      <div class="hint">Soixante secondes pour marquer le plus de points. Clique, tire en arrière comme un lance-pierre et lâche : les points blancs montrent le début du tir. Le ballon rebondit sur le cercle et la planche. Un panier vaut 2 points, 3 derrière la ligne, et 1 de plus s'il ne touche rien. Trois paniers d'affilée : EN FEU, les suivants comptent double. Dès 16 points, le panier se met à bouger. Un tir parti avant la sirène compte encore.</div>
+      <div class="row"><button class="btn main" id="bkNew">NOUVELLE PARTIE</button><button class="btn" id="bkFs">PLEIN ÉCRAN</button></div>
+      <div class="hint">Soixante secondes pour marquer le plus de points. Clique, tire en arrière comme un lance-pierre et lâche : les points blancs montrent le début du tir. Le ballon rebondit sur le cercle et la planche. Un panier vaut 2 points, 3 derrière la ligne, et 1 de plus s'il ne touche rien. Trois paniers d'affilée : EN FEU, les suivants comptent double. Dès 16 points, le panier se met à bouger. Un tir parti avant la sirène compte encore. Le ballon doré vaut 3 fois plus.</div>
     </div></div>
 </div>`;
 const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
-.gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:0 0 auto;position:relative}
-.gameBox canvas{height:min(72vh,640px);width:auto;aspect-ratio:160/200;image-rendering:pixelated;cursor:var(--cp,pointer);touch-action:none}
+.gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:1 1 360px;min-width:min(100%,320px);position:relative}
+.gameBox:fullscreen{padding:0}
+.gameBox:fullscreen canvas{width:min(100vw,calc(100vh * 160 / 200))}
+.gameBox canvas{width:min(100%,max(280px,calc((100vh - 170px) * 160 / 200)));height:auto;aspect-ratio:160/200;image-rendering:pixelated;cursor:var(--cp,pointer);touch-action:none}
 .gSide{display:flex;flex-direction:column;gap:14px;flex:1;min-width:250px;max-width:420px}
 .gSide .sysCard{display:flex;flex-direction:column}
 .gStats{display:grid;grid-template-columns:1fr auto;gap:4px 14px}
@@ -288,7 +290,7 @@ export default async function (ctx) {
   view.innerHTML = HTML;
   pxSkin(view.querySelector('.appWrap'), { title: "PANIER", T: {"k": "#0c0a12", "k2": "#16121e", "fill": "#221c2c", "fillOn": "#2e263a", "hl": "#3a3046", "line": "#62566e", "acc": "#ff8a3a", "accL": "#ffd0a0", "accS": "#c85a1a", "accD": "#3a1a08", "rivet": "#f0f0f8", "btn": "#3a3046", "btnHi": "#62566e", "btnLo": "#16121e", "btnHov": "#443852", "btnHovHi": "#82768e", "text": "#f4f0f8", "muted": "#c0b8cc", "acc2": "#7ee07a", "gold": "#ffd84a", "orange": "#ff8a3a", "red": "#ff4a3a", "green": "#7ee07a", "green2": "#2f8a3a", "bg": "#100c16", "bgDot": "#221c2c", "bgDot2": "#16121e", "spark": "#3a1a08", "spark2": "#ff8a3a", "tile": ["................", "...:............", "................", "..........+.....", "................", "................", ".....:..........", "................", "................", ".............:..", "................", "..+.............", "................", ".........:......", "................", "................"]},
   emblem: ["..kkkkkkkk..", ".kwwwwwwwwk.", ".kwwkkkkwwk.", ".kwwwwwwwwk.", "..koooooook.", "..kkkkkkkk..", "...kwkwkw...", "....kwkw....", "....kooo....", "...kooOok...", "...koooOk...", "....kkkk...."],
-  icons: [[/^NOUVELLE/, 'play'], [/^RECORDS/, 'crown']] });
+  icons: [[/^NOUVELLE/, 'play'], [/^PLEIN/, 'full'], [/^RECORDS/, 'crown']] });
   const $ = id => view.querySelector('#' + id) || document.getElementById(id);
   const doc = async n => { try { return await folder.read(n); } catch { return null; } };
   const games = { best: {}, ...(await doc('games')) };
@@ -328,7 +330,7 @@ let bk = null, bkac = null, bkMute = false;
 function bkBeep(f, d, type = 'square', slide = 0, vol = .04) { if (bkMute) return; try { bkac ??= new AudioContext(); const o = bkac.createOscillator(), g = bkac.createGain(), t = bkac.currentTime; o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(bkac.destination); o.start(t); o.stop(t + d); } catch {} }
 // le panier : hauteur du cercle (elle bouge de haut en bas à partir de 16 points, plus vite après 40)
 const bkHoop = (score, t) => ({y: 84 + (score >= 16 ? Math.round(Math.sin(t / (score >= 40 ? 40 : 70)) * 12) : 0), f: 124, b: 144, board: 146});
-function bkSpawn(r) { const x = 14 + Math.floor(r() * 92); return {x, y: BK.FLOOR - 30}; }
+function bkSpawn(r) { const x = 14 + Math.floor(r() * 92); return {x, y: BK.FLOOR - 30, gold: r() < .14}; }
 function bkNew() {
   const g = bk?.g, rnd = seeded(Date.now() % 1e9);
   bk = renew(bk, {g, mode: 'ready', tick: 0, seen: 0, t: 0, rnd, time: BK.TIME, score: 0, streak: 0, best: 0, made: 0, shots: 0, at: bkSpawn(rnd), ball: null, ang: 55, pow: 5.6, drag: null, pops: [], net: 0, dead: 0, record: false, over: false});
@@ -354,19 +356,22 @@ const bkVel = (ang, pow) => ({vx: Math.cos(ang * Math.PI / 180) * pow, vy: -Math
 function bkShoot(v) {
   if (bk.mode === 'ready') bk.mode = 'play';
   if (bk.mode !== 'play' || bk.ball || bk.over) return;
-  bk.ball = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy, spin: 0, age: 0, from3: bk.at.x < BK.LINE3}; bk.shots++;
+  bk.ball = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy, spin: 0, age: 0, from3: bk.at.x < BK.LINE3, gold: !!bk.at.gold}; bk.shots++;
   bkBeep(240, .08, 'triangle', 420, .05);
 }
+function bkClap(n) { if (bkMute) return; for (let i = 0; i < n; i++) setTimeout(() => bkBeep(1400 + Math.random() * 1600, .025, 'square', 0, .018), i * 45 + Math.random() * 30); }
 function bkUpdate() {
-  bk.t++; if (bk.time > 0) bk.time--;
+  bk.t++; if (bk.time > 0) bk.time--; if (bk.cheer > 0) bk.cheer--;
+  if (bk.streak >= 3 && bk.t % 40 === 0) bkClap(3);  // EN FEU : le public applaudit sans s'arrêter
   for (const p of bk.pops) { p.t--; p.y -= .3; } bk.pops = bk.pops.filter(p => p.t > 0); if (bk.net) bk.net--;
   const b = bk.ball, h = bkHoop(bk.score, bk.t);
   if (b) {
     const was = b.bounce || 0;
     if (bkStep(b, h) === 'in') {
       bk.streak++; bk.best = Math.max(bk.best, bk.streak); bk.made++; bk.net = 30;
-      const fire = bk.streak > 3, pts = ((b.from3 ? 3 : 2) + (b.rim || b.board ? 0 : 1)) * (fire ? 2 : 1);
-      bk.score += pts; bk.pops.push({text: '+' + pts + (b.rim || b.board ? '' : ' PROPRE !'), x: h.f + 10, y: h.y - 14, t: 50, c: fire ? '#ff8a3a' : '#ffd84a'});
+      const fire = bk.streak > 3, pts = ((b.from3 ? 3 : 2) + (b.rim || b.board ? 0 : 1)) * (fire ? 2 : 1) * (b.gold ? 3 : 1);
+      bk.score += pts; bk.pops.push({text: '+' + pts + (b.gold ? ' DORÉ !' : b.rim || b.board ? '' : ' PROPRE !'), x: h.f + 10, y: h.y - 14, t: 50, c: b.gold ? '#fff4a0' : fire ? '#ff8a3a' : '#ffd84a'});
+      bk.cheer = fire || b.gold ? 120 : 60; if (fire || b.gold || bk.streak === 3) bkClap(fire ? 14 : 8);
       [523, 784].forEach((f, i) => setTimeout(() => bkBeep(f, .1), i * 70)); if (bk.streak === 3) setTimeout(() => bkBeep(1047, .25, 'square', 1568), 160);
     }
     if (b.hit === 1) { bkBeep(180, .05, 'square', 0, .05); b.hit = 0; } else if (b.hit === 2) { bkBeep(120, .06, 'triangle', 0, .06); b.hit = 0; }
@@ -383,10 +388,11 @@ function bkUpdate() {
   }
 }
 const BK_PLAYER = ['.s.....s.', '.s.kkk.s.', '.skhhhks.', '.sksssks.', '.wkkskkw.', '.wwwnwww.', '..wwnww..', '..wwwww..', '..bbbbb..', '..bb.bb..', '..ss.ss..', '..ss.ss..', '.kkk.kkk.'];  // bras levés, ballon au-dessus de la tête
-function bkBall(g, x, y, spin) {
+function bkBall(g, x, y, spin, gold) {
   const rows = ['..kkk..', '.kooook', 'koOoook', 'kooooOk', 'koooook', '.kooook', '..kkk..'];
   x = Math.round(x) - 3; y = Math.round(y) - 3;
-  sprite(g, rows, x, y, {k: '#3a1a08', o: '#e8742a', O: '#ffb070'});
+  sprite(g, rows, x, y, gold ? {k: '#6a4a08', o: '#ffc83a', O: '#fff4a0'} : {k: '#3a1a08', o: '#e8742a', O: '#ffb070'});
+  if (gold && (bk.tick >> 3) % 3 === 0) { px(g, '#ffffff', x + 7, y - 1); px(g, '#ffffff', x - 2, y + 5); }  // il scintille
   const a = spin % (Math.PI * 2), sx = Math.round(Math.cos(a) * 2);  // la couture tourne avec le ballon
   px(g, '#3a1a08', x + 3 + sx, y + 1, 1, 5); px(g, '#3a1a08', x + 1, y + 3, 5, 1);
 }
@@ -397,7 +403,14 @@ function bkDraw() {
   // la salle : mur en briques peintes, gradins sombres, parquet en lattes
   px(g, '#2a2440', 0, HUD, W, FLOOR - HUD);
   for (let y = HUD + 4; y < 120; y += 6) for (let x = ((y / 6) % 2) * 6; x < W; x += 12) px(g, '#322b4c', x, y, 11, 5);
-  px(g, '#1a1630', 0, 120, W, 22); for (let x = 3; x < W; x += 7) { px(g, '#3a3256', x, 124, 4, 4); px(g, '#3a3256', x + 3, 132, 4, 4); }
+  px(g, '#1a1630', 0, 120, W, 22);
+  const hype = bk.streak >= 3 ? 2 : bk.cheer > 0 ? 1 : 0;
+  for (const [row, y0, dx] of [[0, 124, 0], [1, 132, 3]]) for (let x = 3 + dx; x < W; x += 7) {
+    const k = (x * 7 + row * 3) % 5, jump = hype && ((bk.tick >> (hype > 1 ? 2 : 3)) + x + row) % 2 ? -2 : 0, y = y0 + jump;
+    const shirt = hype ? ['#c83a5a', '#3a7ad8', '#e8c83a', '#3ab87a', '#e8742a'][k] : '#3a3256';
+    px(g, shirt, x, y + 2, 4, 6 - jump); px(g, hype ? ['#d8a070', '#8a5a3a', '#f0c8a0', '#6a4028', '#c88a5a'][k] : '#4a4068', x + 1, y - 1, 2, 3);
+    if (hype > 1 || hype && jump) { px(g, shirt, x - 1, y - 2, 1, 4); px(g, shirt, x + 4, y - 2, 1, 4); }  // bras en l'air
+  }
   px(g, '#5a3a1a', 0, 142, W, 2);
   px(g, '#b87a3a', 0, 144, W, H - 144); for (let y = 144; y < H; y += 5) { px(g, '#a86a2e', 0, y, W, 1); for (let x = (y * 13) % 41; x < W; x += 41) px(g, '#8a521e', x, y + 1, 1, 4); }
   px(g, '#f0e8d8', 0, FLOOR, W, 1);
@@ -410,17 +423,18 @@ function bkDraw() {
   for (let i = 0; i < 5; i++) { const x0 = h.f + 1 + i * 4.5; for (let j = 0; j < 10; j++) px(g, '#e8e8f0', Math.round(x0 + (10 - i * 2.5) * j / 22 + sway * j / 10), h.y + 2 + j, 1, 1); }
   for (let j = 2; j < 11; j += 3) px(g, '#c8c8d8', h.f + 2 + j / 3, h.y + j, h.b - h.f - 3 - j * 2 / 3, 1);
   const ball = bk.ball, behind = ball && ball.y > h.y && ball.x > h.f && ball.x < h.b;
-  if (behind) bkBall(g, ball.x, ball.y, ball.spin);
+  if (behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold);
   px(g, '#1a1018', h.f - 2, h.y - 2, h.b - h.f + 4, 4); px(g, '#ff7a1a', h.f - 1, h.y - 1, h.b - h.f + 2, 2); px(g, '#ffb070', h.f - 1, h.y - 1, h.b - h.f + 2, 1);
   // le joueur, et le ballon dans ses mains tant qu'il n'est pas tiré
   const fire = bk.streak >= 3;
   BK_PLAYER.forEach((r, j) => { for (let i = 0; i < r.length; i++) { const c = {k: '#1a1018', s: '#d8a070', h: '#5a3a1a', w: fire ? '#ff8a3a' : '#e8e8f0', n: fire ? '#ffd84a' : '#3a5ab8', b: '#2a3a7a'}[r[i]]; if (c) px(g, c, bk.at.x - 5 + i * 2, FLOOR - 26 + j * 2, 2, 2); } });
   if (!ball && !bk.over) {
-    bkBall(g, bk.at.x + 3, bk.at.y, 0);
+    bkBall(g, bk.at.x + 3, bk.at.y, 0, bk.at.gold);
     const v = bk.drag ? bk.drag.v : bkVel(bk.ang, bk.pow);
     if (!bk.drag || Math.hypot(v.vx, v.vy) > 1.5) { const p = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy}; for (let i = 1; i <= 21; i++) { p.vy += BK.G; p.x += p.vx; p.y += p.vy; if (i % 3 === 0) px(g, '#ffffff', p.x, p.y, 1, 1); } }
   }
-  if (ball && !behind) bkBall(g, ball.x, ball.y, ball.spin);
+  if (ball && !behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold);
+  if (!ball && !bk.over && bk.at.gold) pxFont(g, '×3', bk.at.x + 3, bk.at.y - 7, '#fff4a0', 8, 'center');
   for (const p of bk.pops) pxFont(g, p.text, p.x, p.y, p.c, 8, 'center');
   px(g, '#0e0a14', 0, 0, W, HUD);
   pxFont(g, bk.score + ' pts', 4, 9, '#ffffff', 8);
@@ -453,6 +467,7 @@ document.addEventListener('keydown', e => {
   cv.onpointermove = e => { if (bk?.drag) bk.drag.v = vel(bk.drag.a, at(e)); };
   cv.onpointerup = e => { if (!bk?.drag) return; const v = vel(bk.drag.a, at(e)); bk.drag = null; if (Math.hypot(v.vx, v.vy) > 1.5) bkShoot(v); }; }
 $('bkNew').onclick = () => { bkNew(); $('bkNew').blur(); };
+$('bkFs').onclick = () => { $('bkFs').blur(); try { document.fullscreenElement ? document.exitFullscreen() : $('bkCanvas').parentElement.requestFullscreen?.().catch(() => {}); } catch {} };
 {  // vérification : de chaque endroit possible, il existe un tir au clavier (angle au degré, force au dixième) qui marque, panier fixe et panier qui bouge ;
    // et un panier compte bien les points
   const bad = [];
@@ -462,6 +477,9 @@ $('bkNew').onclick = () => { bkNew(); $('bkNew').blur(); };
   const keep = bk, keepS = JSON.stringify(bks), keepB = games.best.panier; bk = null; bkMute = true; bkNew();
   bk.at = {x: 90, y: BK.FLOOR - 30}; const s = find(90, 0, 0); bkShoot(bkVel(...s)); bk.mode = 'play'; for (let i = 0; i < 300 && bk.ball; i++) bkUpdate();
   if (bk.made !== 1 || bk.score < 2) bad.push('panier compté : ' + bk.made + ' / ' + bk.score);
+  const one = bk.score; bk.at = {x: 90, y: BK.FLOOR - 30, gold: true}; bk.streak = 0; bkShoot(bkVel(...s)); for (let i = 0; i < 300 && bk.ball; i++) bkUpdate();
+  if (bk.score - one !== one * 3) bad.push('ballon doré : ' + (bk.score - one) + ' au lieu de ' + one * 3);
+  $('bkCanvas').__bk = {st: () => bk, aim: x => find(x, bk.score, bk.t), shoot: a => bkShoot(bkVel(...a))};
   console.assert(!bad.length, 'panier', bad);
   Object.assign(bks, JSON.parse(keepS)); if (keepB === undefined) delete games.best.panier; else games.best.panier = keepB; bk = keep; bkMute = false;
 }

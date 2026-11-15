@@ -19,6 +19,15 @@ Un jeu d'adresse en pixel art : du basket en 60 secondes dans un gymnase. Vise, 
 - Dès **16 points**, le panier monte et descend ; après 40 points, il bouge plus vite.
 - Le tireur change de place à chaque tir. Un tir parti avant la sirène compte encore.
 
+## Le public et le ballon doré
+
+- Après chaque panier, le **public** se lève et saute dans les gradins ; quand tu es **EN FEU**, il reste debout, bras en l'air, et applaudit.
+- De temps en temps, le tireur reçoit un **ballon doré** (marqué **×3**) : son panier vaut **3 fois plus**, en plus du bonus EN FEU.
+
+## Plein écran
+
+Le bouton **Plein écran** agrandit le terrain à tout l'écran (Échap pour en sortir). Hors plein écran, le jeu prend toute la hauteur que laisse la fenêtre.
+
 ## Statistiques
 
 Le panneau Records garde ton **meilleur score**, le nombre de **matchs**, de **paniers** et ta **plus longue série**.
