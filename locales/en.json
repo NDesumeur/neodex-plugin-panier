@@ -83,5 +83,9 @@
  "pts": "pts",
  "secondes": "seconds",
  "tirs": "shots",
- "visée au clavier : «": "keyboard aim: «"
+ "visée au clavier : «": "keyboard aim: «",
+ "Soixante secondes pour marquer le plus de points. Clique, tire en arrière comme un lance-pierre et lâche : les points blancs montrent le début du tir. Le ballon rebondit sur le cercle et la planche. Un panier vaut 2 points, 3 derrière la ligne, et 1 de plus s'il ne touche rien. Trois paniers d'affilée : EN FEU, les suivants comptent double. Dès 16 points, le panier se met à bouger. Un tir parti avant la sirène compte encore. Le ballon doré vaut 3 fois plus.": "Sixty seconds to score as many points as you can. Click, pull back like a slingshot and let go: the white dots show the start of the shot. The ball bounces off the rim and the backboard. A basket is worth 2 points, 3 behind the line, and 1 more if it touches nothing. Three baskets in a row: ON FIRE, the next ones count double. From 16 points, the basket starts to move. A shot taken before the buzzer still counts. The golden ball is worth 3 times more.",
+ "DORÉ !": "GOLDEN!",
+ "ballon doré :": "golden ball:",
+ "au lieu de": "instead of"
 }
