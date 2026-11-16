@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.panier",
   "repo": "NDesumeur/neodex-plugin-panier",
-  "version": "1.1.0",
-  "sha256": "8ef7072a2751296f3f314f2173253e546112c574547b9a7b5dc7e611b725fbc5",
-  "approvedAt": "2026-11-16T04:14:38.347Z",
+  "version": "1.1.1",
+  "sha256": "b7328e2e67c9ea2c133592ce62dd8340017968db906d3977a6c14f3150b66ed5",
+  "approvedAt": "2026-11-16T16:38:50.638Z",
   "neobase": ">=4.0.0",
-  "signature": "F6nfoeF1lmKFmWxjLRyE9FnOyci6qgQ5MUDiqRejSFJR0OPXn0ryXCLqDjyXwM0XQgzWP8w8wlZnhb0SY2JDCg=="
+  "signature": "EG3oPoNLoYH7Kbfdeo5L0JVAz4jDhmXuhVznrAWDgiFbTtqMtcFN0aDF7bjt68H3Cdgv+QPk2ZweR5SMh2lsBw=="
 }
