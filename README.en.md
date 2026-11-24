@@ -4,6 +4,11 @@ A pixel art skill game: basketball in 60 seconds in a gym. Aim, shoot, score.
 
 *Version française : [README.md](README.md)*
 
+## Balls to unlock (new in 1.2.0)
+
+- Six balls, each with **its own physics**, to pick in the **Balls** panel: Classic, **Beach ball** (big and light, the air slows it down), **Super bounce** (small, bounces everywhere), **Bowling ball** (heavy, the rim softens it), **Moon rock** (floats) and **Disco ball** (+1 point per basket).
+- You unlock them by playing: total baskets, longest streak or best score. The dotted path follows the chosen ball.
+
 ## Controls
 
 - **Mouse**: click, pull back like a slingshot and release. The further you pull, the stronger the shot.

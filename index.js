@@ -7,9 +7,14 @@ const HTML = `<div class="appWrap wide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="bkStats"></div></div>
       <div class="row"><button class="btn main" id="bkNew">NOUVELLE PARTIE</button><button class="btn" id="bkFs">PLEIN ÉCRAN</button></div>
       <div class="hint">Soixante secondes pour marquer le plus de points. Clique, tire en arrière comme un lance-pierre et lâche : les points blancs montrent le début du tir. Le ballon rebondit sur le cercle et la planche. Un panier vaut 2 points, 3 derrière la ligne, et 1 de plus s'il ne touche rien. Trois paniers d'affilée : EN FEU, les suivants comptent double. Dès 16 points, le panier se met à bouger. Un tir parti avant la sirène compte encore. Le ballon doré vaut 3 fois plus.</div>
+      <div class="sysCard"><b>BALLONS</b><div class="hint">Chaque ballon a sa physique. Ils se débloquent en jouant : paniers au total, plus longue série, meilleur score.</div><div class="bkBalls" id="bkBalls"></div></div>
     </div></div>
 </div>`;
-const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+const CSS = `.bkBalls{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:8px}
+.bkBall{display:grid;justify-items:center;gap:4px;padding:8px 4px;background:#1a1426;box-shadow:inset 0 0 0 2px #3a2e4a;text-align:center;font-size:12px;cursor:pointer}
+.bkBall.on{box-shadow:inset 0 0 0 2px #ffd84a}.bkBall.off{opacity:.55;cursor:default}
+.bkBall canvas{width:28px;height:28px;image-rendering:pixelated}.bkBall i{font-style:normal;color:#ffb070;font-size:11px}.bkBall em{font-style:normal;color:#a898b8;font-size:11px}
+.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
 .gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:1 1 360px;min-width:min(100%,320px);position:relative}
 .gameBox:fullscreen{padding:0}
 .gameBox:fullscreen canvas{width:min(100vw,calc(100vh * 160 / 200))}
@@ -325,7 +330,19 @@ const pxFont = (g, text, x, y, color, size = 8, align = 'left') => { const s = P
 const BK = {W: 160, H: 200, HUD: 12, FLOOR: 186, R: 5, G: .16, LINE3: 64, VMAX: 8, TIME: 3600};
 // une nouvelle partie garde le même objet : la boucle du jeu (gameLoop) continue de tourner dessus
 const renew = (old, o) => { if (!old) return o; for (const k of Object.keys(old)) if (k !== 'raf') delete old[k]; return Object.assign(old, o); };
-const bks = gstore('panier', {games: 0, baskets: 0, streak: 0});
+const bks = gstore('panier', {games: 0, baskets: 0, streak: 0}); bks.ball ??= 'classique';
+// les ballons : R rayon, G gravité, rim rebond sur le cercle, floor rebond au sol, drag frottement de l'air ; need : de quoi le débloquer
+const BK_BALLS = [
+  {id: 'classique', name: 'Classique', power: 'Le ballon de match', R: 5, G: .16, rim: 1.55, floor: .55, drag: 1, rows: ['..kkk..', '.kooook', 'koOoook', 'kooooOk', 'koooook', '.kooook', '..kkk..'], pal: {k: '#3a1a08', o: '#e8742a', O: '#ffb070'}, seam: true},
+  {id: 'plage', name: 'Ballon de plage', power: 'Gros et léger, l\'air le freine', R: 6, G: .11, rim: 1.7, floor: .7, drag: .993, need: ['baskets', 25], rows: ['..kkk..', '.kwrrrk', 'kwwrrbk', 'kyywbbk', 'kyyybbk', '.kyygbk', '..kkk..'], pal: {k: '#1a1a2a', w: '#ffffff', r: '#ff4a5a', b: '#3a7ad8', y: '#ffd84a', g: '#3ab87a'}},
+  {id: 'rebond', name: 'Super-rebond', power: 'Petit, rebondit partout', R: 4, G: .16, rim: 1.85, floor: .85, drag: 1, need: ['streak', 5], rows: ['.......', '..kkk..', '.kgGgk.', '.kgggk.', '.kgggk.', '..kkk..', '.......'], pal: {k: '#0a3a1a', g: '#5aff9a', G: '#e0ffe8'}},
+  {id: 'bowling', name: 'Boule de bowling', power: 'Lourde, le cercle l\'amortit', R: 5, G: .2, rim: 1.2, floor: .25, drag: 1, need: ['baskets', 75], rows: ['..kkk..', '.kpppk.', 'kpPpkpk', 'kppkppk', 'kpppppk', '.kpppk.', '..kkk..'], pal: {k: '#0a0614', p: '#4a2a7a', P: '#8a6ac8'}},
+  {id: 'lune', name: 'Pierre de lune', power: 'Flotte comme sur la Lune', R: 5, G: .09, rim: 1.55, floor: .6, drag: 1, need: ['score', 40], rows: ['..kkk..', '.kmmmmk', 'kmMmcmk', 'kmmmmmk', 'kcmmMmk', '.kmmmck', '..kkk..'], pal: {k: '#2a2a3a', m: '#a8a8c0', M: '#e8e8f8', c: '#6a6a80'}},
+  {id: 'disco', name: 'Boule disco', power: '+1 point par panier', R: 5, G: .16, rim: 1.55, floor: .55, drag: 1, bonus: 1, need: ['baskets', 200], rows: ['..kkk..', '.kswsk.', 'kswswsk', 'kwswswk', 'kswswsk', '.kswsk.', '..kkk..'], pal: {k: '#2a2a3a', s: '#a8b0c8', w: '#ffffff'}}];
+const bkNeed = b => !b.need ? 0 : b.need[0] === 'baskets' ? bks.baskets : b.need[0] === 'streak' ? bks.streak : games.best.panier || 0;
+const bkOpen = b => !b.need || bkNeed(b) >= b.need[1];
+const bkKind = () => { const b = BK_BALLS.find(b => b.id === bks.ball) || BK_BALLS[0]; return bkOpen(b) ? b : BK_BALLS[0]; };
+const BK_NEED_TXT = {baskets: 'paniers au total', streak: 'paniers d\'affilée', score: 'points en un match'};
 let bk = null, bkac = null, bkMute = false;
 function bkBeep(f, d, type = 'square', slide = 0, vol = .04) { if (bkMute) return; try { bkac ??= new AudioContext(); const o = bkac.createOscillator(), g = bkac.createGain(), t = bkac.currentTime; o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(bkac.destination); o.start(t); o.stop(t + d); } catch {} }
 // le panier : hauteur du cercle (elle bouge de haut en bas à partir de 16 points, plus vite après 40)
@@ -338,16 +355,16 @@ function bkNew() {
 }
 // un pas de physique : gravité, cercle (deux points), planche, sol ; renvoie 'in' quand le ballon passe dans le cercle par le haut
 function bkStep(b, h) {
-  const {R, G, FLOOR} = BK, py = b.y;
-  b.vy += G; b.x += b.vx; b.y += b.vy; b.spin += b.vx * .12;
+  const R = b.R ?? BK.R, G = b.G ?? BK.G, FLOOR = BK.FLOOR, py = b.y, rim = b.rimK ?? 1.55, dr = b.drag ?? 1;
+  b.vy += G; b.vx *= dr; b.vy *= dr; b.x += b.vx; b.y += b.vy; b.spin += b.vx * .12;
   for (const cx of [h.f, h.b]) {
     const dx = b.x - cx, dy = b.y - h.y, d = Math.hypot(dx, dy), m = R + 1.5;
-    if (d < m && d > 0) { const nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny; b.x = cx + nx * m; b.y = h.y + ny * m; if (vn < 0) { b.vx -= 1.55 * vn * nx; b.vy -= 1.55 * vn * ny; b.vx *= .92; b.vy *= .92; } if (!b.rim) b.hit = 1; b.rim = 1; }
+    if (d < m && d > 0) { const nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny; b.x = cx + nx * m; b.y = h.y + ny * m; if (vn < 0) { b.vx -= rim * vn * nx; b.vy -= rim * vn * ny; b.vx *= .92; b.vy *= .92; } if (!b.rim) b.hit = 1; b.rim = 1; }
   }
   if (b.x + R > h.board && b.y > h.y - 28 && b.y < h.y + 6) {  // rien ne passe à travers la planche, même poussé par le cercle
      b.x = h.board - R; b.vx = -Math.abs(b.vx) * .6; b.board = 1; if (!b.rim) b.hit = 2; }
   if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx) * .7; }
-  if (b.y + R > FLOOR) { b.y = FLOOR - R; if (b.vy > .6) b.bounce = (b.bounce || 0) + 1; b.vy = -b.vy * .55; b.vx *= .8; if (Math.abs(b.vy) < .5) b.vy = 0; }
+  if (b.y + R > FLOOR) { b.y = FLOOR - R; if (b.vy > .6) b.bounce = (b.bounce || 0) + 1; b.vy = -b.vy * (b.floorK ?? .55); b.vx *= .8; if (Math.abs(b.vy) < .5) b.vy = 0; }
   b.age++;
   if (!b.in && py < h.y && b.y >= h.y && b.vy > 0 && b.x > h.f + 1 && b.x < h.b - 1) { b.in = 1; return 'in'; }
   return null;
@@ -356,7 +373,7 @@ const bkVel = (ang, pow) => ({vx: Math.cos(ang * Math.PI / 180) * pow, vy: -Math
 function bkShoot(v) {
   if (bk.mode === 'ready') bk.mode = 'play';
   if (bk.mode !== 'play' || bk.ball || bk.over) return;
-  bk.ball = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy, spin: 0, age: 0, from3: bk.at.x < BK.LINE3, gold: !!bk.at.gold}; bk.shots++;
+  const K = bkKind(); bk.ball = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy, spin: 0, age: 0, from3: bk.at.x < BK.LINE3, gold: !!bk.at.gold, R: K.R, G: K.G, rimK: K.rim, floorK: K.floor, drag: K.drag, kind: K.id}; bk.shots++;
   bkBeep(240, .08, 'triangle', 420, .05);
 }
 function bkClap(n) { if (bkMute) return; for (let i = 0; i < n; i++) setTimeout(() => bkBeep(1400 + Math.random() * 1600, .025, 'square', 0, .018), i * 45 + Math.random() * 30); }
@@ -369,7 +386,7 @@ function bkUpdate() {
     const was = b.bounce || 0;
     if (bkStep(b, h) === 'in') {
       bk.streak++; bk.best = Math.max(bk.best, bk.streak); bk.made++; bk.net = 30;
-      const fire = bk.streak > 3, pts = ((b.from3 ? 3 : 2) + (b.rim || b.board ? 0 : 1)) * (fire ? 2 : 1) * (b.gold ? 3 : 1);
+      const fire = bk.streak > 3, pts = ((b.from3 ? 3 : 2) + (b.rim || b.board ? 0 : 1) + (BK_BALLS.find(k => k.id === b.kind)?.bonus || 0)) * (fire ? 2 : 1) * (b.gold ? 3 : 1);
       bk.score += pts; bk.pops.push({text: '+' + pts + (b.gold ? ' DORÉ !' : b.rim || b.board ? '' : ' PROPRE !'), x: h.f + 10, y: h.y - 14, t: 50, c: b.gold ? '#fff4a0' : fire ? '#ff8a3a' : '#ffd84a'});
       bk.cheer = fire || b.gold ? 120 : 60; if (fire || b.gold || bk.streak === 3) bkClap(fire ? 14 : 8);
       [523, 784].forEach((f, i) => setTimeout(() => bkBeep(f, .1), i * 70)); if (bk.streak === 3) setTimeout(() => bkBeep(1047, .25, 'square', 1568), 160);
@@ -383,15 +400,19 @@ function bkUpdate() {
     }
   }
   if (bk.time <= 0 && !bk.ball && !bk.over) {  // le buzzer : un tir en l'air compte encore
+    const before = BK_BALLS.filter(bkOpen).length;
     bk.over = true; bk.mode = 'over'; bk.dead = 0; bks.games++; bks.baskets += bk.made; bks.streak = Math.max(bks.streak, bk.best);
-    bk.record = best('panier', bk.score); saveGames(); bkInfo(); bkBeep(440, .5, 'sawtooth', 220, .06);
+    bk.record = best('panier', bk.score); saveGames(); bkInfo();
+    const now = BK_BALLS.filter(bkOpen); if (now.length > before) { bk.unlock = now.at(-1).name; toast('Nouveau ballon : ' + bk.unlock); } bkBeep(440, .5, 'sawtooth', 220, .06);
   }
 }
 const BK_PLAYER = ['.s.....s.', '.s.kkk.s.', '.skhhhks.', '.sksssks.', '.wkkskkw.', '.wwwnwww.', '..wwnww..', '..wwwww..', '..bbbbb..', '..bb.bb..', '..ss.ss..', '..ss.ss..', '.kkk.kkk.'];  // bras levés, ballon au-dessus de la tête
-function bkBall(g, x, y, spin, gold) {
-  const rows = ['..kkk..', '.kooook', 'koOoook', 'kooooOk', 'koooook', '.kooook', '..kkk..'];
+function bkBall(g, x, y, spin, gold, kind) {
+  const K = BK_BALLS.find(b => b.id === kind) || bkKind(), rows = K.rows;
   x = Math.round(x) - 3; y = Math.round(y) - 3;
-  sprite(g, rows, x, y, gold ? {k: '#6a4a08', o: '#ffc83a', O: '#fff4a0'} : {k: '#3a1a08', o: '#e8742a', O: '#ffb070'});
+  sprite(g, rows, x, y, gold ? Object.fromEntries(Object.keys(K.pal).map(c => [c, c === 'k' ? '#6a4a08' : c === c.toUpperCase() || c === 'w' ? '#fff4a0' : '#ffc83a'])) : K.pal);
+  if (K.id === 'disco' && (bk.tick >> 2) % 4 === 0) px(g, '#ffffff', x + 1 + (bk.tick >> 4) % 5, y + 2 + (bk.tick >> 3) % 3);
+  if (!K.seam && !gold) return;
   if (gold && (bk.tick >> 3) % 3 === 0) { px(g, '#ffffff', x + 7, y - 1); px(g, '#ffffff', x - 2, y + 5); }  // il scintille
   const a = spin % (Math.PI * 2), sx = Math.round(Math.cos(a) * 2);  // la couture tourne avec le ballon
   px(g, '#3a1a08', x + 3 + sx, y + 1, 1, 5); px(g, '#3a1a08', x + 1, y + 3, 5, 1);
@@ -423,7 +444,7 @@ function bkDraw() {
   for (let i = 0; i < 5; i++) { const x0 = h.f + 1 + i * 4.5; for (let j = 0; j < 10; j++) px(g, '#e8e8f0', Math.round(x0 + (10 - i * 2.5) * j / 22 + sway * j / 10), h.y + 2 + j, 1, 1); }
   for (let j = 2; j < 11; j += 3) px(g, '#c8c8d8', h.f + 2 + j / 3, h.y + j, h.b - h.f - 3 - j * 2 / 3, 1);
   const ball = bk.ball, behind = ball && ball.y > h.y && ball.x > h.f && ball.x < h.b;
-  if (behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold);
+  if (behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold, ball.kind);
   px(g, '#1a1018', h.f - 2, h.y - 2, h.b - h.f + 4, 4); px(g, '#ff7a1a', h.f - 1, h.y - 1, h.b - h.f + 2, 2); px(g, '#ffb070', h.f - 1, h.y - 1, h.b - h.f + 2, 1);
   // le joueur, et le ballon dans ses mains tant qu'il n'est pas tiré
   const fire = bk.streak >= 3;
@@ -431,9 +452,9 @@ function bkDraw() {
   if (!ball && !bk.over) {
     bkBall(g, bk.at.x + 3, bk.at.y, 0, bk.at.gold);
     const v = bk.drag ? bk.drag.v : bkVel(bk.ang, bk.pow);
-    if (!bk.drag || Math.hypot(v.vx, v.vy) > 1.5) { const p = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy}; for (let i = 1; i <= 21; i++) { p.vy += BK.G; p.x += p.vx; p.y += p.vy; if (i % 3 === 0) px(g, '#ffffff', p.x, p.y, 1, 1); } }
+    const K = bkKind(); if (!bk.drag || Math.hypot(v.vx, v.vy) > 1.5) { const p = {x: bk.at.x + 3, y: bk.at.y, vx: v.vx, vy: v.vy}; for (let i = 1; i <= 21; i++) { p.vy += K.G; p.vx *= K.drag; p.vy *= K.drag; p.x += p.vx; p.y += p.vy; if (i % 3 === 0) px(g, '#ffffff', p.x, p.y, 1, 1); } }
   }
-  if (ball && !behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold);
+  if (ball && !behind) bkBall(g, ball.x, ball.y, ball.spin, ball.gold, ball.kind);
   if (!ball && !bk.over && bk.at.gold) pxFont(g, '×3', bk.at.x + 3, bk.at.y - 7, '#fff4a0', 8, 'center');
   for (const p of bk.pops) pxFont(g, p.text, p.x, p.y, p.c, 8, 'center');
   px(g, '#0e0a14', 0, 0, W, HUD);
@@ -442,10 +463,16 @@ function bkDraw() {
   const s = Math.ceil(bk.time / 60); pxFont(g, s + ' s', W - 4, 9, s <= 10 && (bk.tick >> 4) % 2 ? '#ff4a3a' : '#a898b8', 8, 'right');
   if (bk.mode === 'ready') gameText(g, W, [['PANIER', '#ffd84a', 12], ['Tire en arrière, lâche : tir', '#ffffff'], ['ou flèches + Espace', '#b8b0c8']], 60);
   if (bk.mode === 'pause') gameText(g, W, [['PAUSE', '#ffd84a', 12], ['Entrée : reprendre', '#b8b0c8']], 80);
-  if (bk.mode === 'over' && bk.dead > 40) gameText(g, W, [['FIN DU MATCH', '#ffd84a', 12], [bk.score + ' points', '#ffffff'], [bk.made + ' paniers sur ' + bk.shots, '#ffffff'], [bk.record ? 'NOUVEAU RECORD !' : 'Record ' + (games.best.panier || 0), '#7ee07a'], [bk.dead > 70 ? 'Espace : rejouer' : '', '#b8b0c8']], 60);
+  if (bk.mode === 'over' && bk.dead > 40) gameText(g, W, [['FIN DU MATCH', '#ffd84a', 12], [bk.score + ' points', '#ffffff'], [bk.made + ' paniers sur ' + bk.shots, '#ffffff'], [bk.record ? 'NOUVEAU RECORD !' : 'Record ' + (games.best.panier || 0), '#7ee07a'], ...(bk.unlock ? [['Nouveau ballon : ' + bk.unlock, '#ffb070']] : []), [bk.dead > 70 ? 'Espace : rejouer' : '', '#b8b0c8']], 60);
   if (bk.tick % 20 === 0) g.canvas.setAttribute('aria-label', 'Panier : ' + bk.score + ' points, ' + bk.made + ' paniers sur ' + bk.shots + ' tirs, ' + Math.ceil(bk.time / 60) + ' secondes' + (bk.over ? ', match fini' : '') + '. Angle ' + bk.ang + '°, force ' + bk.pow.toFixed(1) + ', tireur à ' + bk.at.x + (bk.ball ? ', ballon en l’air' : '') + '.');
 }
+function bkBalls() {  // le choix du ballon : ceux pas encore débloqués montrent ce qu'il reste à faire
+  $('bkBalls').replaceChildren(...BK_BALLS.map(K => { const ok = bkOpen(K), on = bkKind().id === K.id, card = el('div', 'bkBall' + (on ? ' on' : '') + (ok ? '' : ' off')), cv = el('canvas');
+    cv.width = cv.height = 7; sprite(cv.getContext('2d'), K.rows, 0, 0, K.pal); card.append(cv, el('span', '', K.name), el('i', '', K.power), el('em', '', ok ? (on ? 'CHOISI' : 'à toi') : Math.min(bkNeed(K), K.need[1]) + ' / ' + K.need[1] + ' ' + BK_NEED_TXT[K.need[0]]));
+    if (ok) card.onclick = () => { if (bk?.ball) return; bks.ball = K.id; saveGames(); bkBalls(); }; return card; }));
+}
 function bkInfo() {
+  bkBalls();
   $('bkStats').replaceChildren(...[['Meilleur score', games.best.panier || 0], ['Matchs', bks.games], ['Paniers', bks.baskets], ['Plus longue série', bks.streak]].flatMap(([a, b]) => [el('span', '', a), el('b', '', String(b))]));
 }
 document.addEventListener('keydown', e => {
@@ -474,12 +501,16 @@ $('bkFs').onclick = () => { $('bkFs').blur(); try { document.fullscreenElement ?
   const scores = (x, ang, pow, sc, t0) => { const v = bkVel(ang, pow), b = {x: x + 3, y: BK.FLOOR - 30, vx: v.vx, vy: v.vy, spin: 0, age: 0}; for (let t = 0; t < 300; t++) { if (bkStep(b, bkHoop(sc, t0 + t)) === 'in') return true; if (b.x > BK.W + 10 || b.bounce) return false; } return false; };
   const find = (x, sc, t0) => { for (let ang = 30; ang <= 80; ang += 2) for (let pow = 4; pow <= BK.VMAX; pow = +(pow + .1).toFixed(1)) if (scores(x, ang, pow, sc, t0)) return [ang, pow]; return null; };
   for (const x of [14, 40, 63, 64, 90, 105]) { if (!find(x, 0, 0)) bad.push('fixe ' + x); if (!find(x, 20, 300)) bad.push('bouge ' + x); }
+  const scoresK = (K, x, ang, pow) => { const v = bkVel(ang, pow), b = {x: x + 3, y: BK.FLOOR - 30, vx: v.vx, vy: v.vy, spin: 0, age: 0, R: K.R, G: K.G, rimK: K.rim, floorK: K.floor, drag: K.drag}; for (let t = 0; t < 300; t++) { if (bkStep(b, bkHoop(0, t)) === 'in') return true; if (b.x > BK.W + 10 || b.bounce) return false; } return false; };
+  for (const K of BK_BALLS.slice(1)) for (const x of [14, 105]) { let ok = false; for (let ang = 30; ang <= 80 && !ok; ang += 2) for (let pow = 3; pow <= BK.VMAX && !ok; pow = +(pow + .1).toFixed(1)) ok = scoresK(K, x, ang, pow); if (!ok) bad.push('ballon ' + K.id + ' à ' + x); }
   const keep = bk, keepS = JSON.stringify(bks), keepB = games.best.panier; bk = null; bkMute = true; bkNew();
   bk.at = {x: 90, y: BK.FLOOR - 30}; const s = find(90, 0, 0); bkShoot(bkVel(...s)); bk.mode = 'play'; for (let i = 0; i < 300 && bk.ball; i++) bkUpdate();
   if (bk.made !== 1 || bk.score < 2) bad.push('panier compté : ' + bk.made + ' / ' + bk.score);
   const one = bk.score; bk.at = {x: 90, y: BK.FLOOR - 30, gold: true}; bk.streak = 0; bkShoot(bkVel(...s)); for (let i = 0; i < 300 && bk.ball; i++) bkUpdate();
   if (bk.score - one !== one * 3) bad.push('ballon doré : ' + (bk.score - one) + ' au lieu de ' + one * 3);
-  $('bkCanvas').__bk = {st: () => bk, aim: x => find(x, bk.score, bk.t), shoot: a => bkShoot(bkVel(...a))};
+  bks.ball = 'disco'; bks.baskets = 999; const d0 = bk.score; bk.at = {x: 90, y: BK.FLOOR - 30}; bk.streak = 0; bkShoot(bkVel(...s)); for (let i = 0; i < 300 && bk.ball; i++) bkUpdate();
+  if (bk.score - d0 !== one + 1) bad.push('boule disco : ' + (bk.score - d0)); bks.baskets = 0; if (bkKind().id !== 'classique') bad.push('ballon bloqué choisi');
+  $('bkCanvas').__bk = {st: () => bk, aim: x => find(x, bk.score, bk.t), shoot: a => bkShoot(bkVel(...a)), bks: () => bks, info: () => bkInfo()};
   console.assert(!bad.length, 'panier', bad);
   Object.assign(bks, JSON.parse(keepS)); if (keepB === undefined) delete games.best.panier; else games.best.panier = keepB; bk = keep; bkMute = false;
 }

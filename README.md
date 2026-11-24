@@ -4,6 +4,11 @@ Un jeu d'adresse en pixel art : du basket en 60 secondes dans un gymnase. Vise, 
 
 *English version: [README.en.md](README.en.md)*
 
+## Ballons à débloquer (nouveau en 1.2.0)
+
+- Six ballons, chacun avec **sa physique**, à choisir dans le panneau **Ballons** : Classique, **Ballon de plage** (gros et léger, l'air le freine), **Super-rebond** (petit, rebondit partout), **Boule de bowling** (lourde, le cercle l'amortit), **Pierre de lune** (flotte) et **Boule disco** (+1 point par panier).
+- Ils se débloquent en jouant : paniers au total, plus longue série ou meilleur score. La trajectoire en pointillés suit le ballon choisi.
+
 ## Commandes
 
 - **Souris** : clique, tire en arrière comme un lance-pierre et lâche. Plus tu tires loin, plus le tir est fort.

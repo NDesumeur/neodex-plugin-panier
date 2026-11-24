@@ -27,6 +27,14 @@ module.exports = async ({ pj, sleep }) => {
   if (s1 < 2 || s2 - s1 !== s1 * 3) throw new Error('points : ' + s1 + ' puis ' + s2);
   await fire(false); await fire(false); await sleep(200); await shot('5-en-feu');
   if (await C('return bk.streak;') < 3) throw new Error('pas EN FEU : série ' + await C('return bk.streak;'));
+  // les ballons : bloqué au départ, débloqué après 25 paniers, choisi d'un clic dans le panneau, et le tir part avec sa physique
+  if (await pj(`document.querySelectorAll('.bkBall.off').length`) < 5) throw new Error('ballons pas bloqués au départ');
+  await C(`T.bks().baskets = 30; T.info(); return 0;`); await pj(`document.querySelectorAll('.bkBall')[1].click(), 0`);
+  if (await C('return T.bks().ball;') !== 'plage') throw new Error('ballon de plage pas choisi');
+  await C(`bk.mode = 'play'; bk.at = {x: 40, y: 156}; T.shoot([55, 5.5]); return 0;`); await sleep(500); await shot('6-ballon-plage');
+  if (await C('return bk.ball?.kind;') !== 'plage') throw new Error('le tir ne part pas avec le ballon de plage');
+  for (let i = 0; i < 20 && await C('return !!bk.ball;'); i++) await sleep(250);
+  await C(`Object.assign(T.bks(), {baskets: 0, ball: 'classique'}); T.info(); return 0;`);
   const errs = await pj(`window.__e.join(' | ')`); if (errs) throw new Error('erreur : ' + errs);
   await pj(`document.getElementById('bkFs').click(), 0`); await sleep(700);
   const fs = await pj(`(() => { const c = document.getElementById('bkCanvas'), r = c.getBoundingClientRect(); return document.fullscreenElement === c.parentElement && (Math.abs(r.height - innerHeight) < 3 || Math.abs(r.width - innerWidth) < 3); })()`);
