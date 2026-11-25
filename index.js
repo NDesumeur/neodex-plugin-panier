@@ -304,6 +304,9 @@ export default async function (ctx) {
   const best = (k, v) => { const b = games.best[k]; if (v > (b ?? 0)) {  // un score nul n'est jamais un record
     games.best[k] = v; saveGames(); return true; } return false; };
   const gstore = (k, init) => (games[k] ??= init);
+  // les trophées de NeoDex (3.4.8 et plus) : succès et records déclarés dans plugin.json ; sur un NeoDex plus ancien, rien ne se passe
+  const trophy = id => { ctx.games?.unlock(id).catch(() => {}); };
+  const trophyRecord = (id, v) => { if (v != null && Number.isFinite(+v)) ctx.games?.record(id, +v).catch(() => {}); };
 function gameLoop(st, appKey, update, draw) {
   cancelAnimationFrame(st.raf);
   const STEP = 1000 / 60; let acc = 0, last = performance.now();
@@ -472,6 +475,7 @@ function bkBalls() {  // le choix du ballon : ceux pas encore débloqués montre
     if (ok) card.onclick = () => { if (bk?.ball) return; bks.ball = K.id; saveGames(); bkBalls(); }; return card; }));
 }
 function bkInfo() {
+  setTimeout(bkTrophies);
   bkBalls();
   $('bkStats').replaceChildren(...[['Meilleur score', games.best.panier || 0], ['Matchs', bks.games], ['Paniers', bks.baskets], ['Plus longue série', bks.streak]].flatMap(([a, b]) => [el('span', '', a), el('b', '', String(b))]));
 }
@@ -513,6 +517,13 @@ $('bkFs').onclick = () => { $('bkFs').blur(); try { document.fullscreenElement ?
   $('bkCanvas').__bk = {st: () => bk, aim: x => find(x, bk.score, bk.t), shoot: a => bkShoot(bkVel(...a)), bks: () => bks, info: () => bkInfo()};
   console.assert(!bad.length, 'panier', bad);
   Object.assign(bks, JSON.parse(keepS)); if (keepB === undefined) delete games.best.panier; else games.best.panier = keepB; bk = keep; bkMute = false;
+}
+// les trophées, tirés des statistiques et des records gardés (aussi à l'ouverture : ce qui a été fait avant compte)
+function bkTrophies() {
+  const b = games.best.panier, sig = [b, bks.games, bks.baskets, bks.streak].join(); if (sig === bkTrophies.sig) return; bkTrophies.sig = sig;
+  trophyRecord('score', b || null); trophyRecord('serie', bks.streak || null);
+  if (bks.games >= 1) trophy('premier'); if (b >= 20) trophy('s20'); if (b >= 50) trophy('s50'); if (b >= 100) trophy('s100');
+  if (bks.streak >= 10) trophy('serie10'); if (bks.baskets >= 1000) trophy('mille');
 }
 ctx.onOpen(() => {
   if (!bk || !bk.g) { bkNew(); bk.g = $('bkCanvas').getContext('2d'); }

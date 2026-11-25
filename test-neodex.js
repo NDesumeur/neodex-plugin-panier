@@ -10,7 +10,7 @@ module.exports = async ({ pj, sleep }) => {
   await sleep(500); await shot('0-depart');
   await C(`bk.at.gold = false; return 0;`);  // l'angle et la force sont lus dans la description du canevas : un tir normal
   for (let i = 0; i < 6; i++) await key('ArrowLeft');
-  await key('ArrowUp'); await sleep(200);
+  await key('ArrowUp'); await sleep(400);  // la description du canevas n'est réécrite que toutes les 20 images (333 ms)
   if (!/Angle 61°, force 5\.7/.test(await label())) throw new Error('visée au clavier : « ' + (await label()) + ' »');
   await key(' '); await sleep(450); await shot('1-vol');
   await sleep(4500);

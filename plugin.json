@@ -1,7 +1,7 @@
 {
   "id": "neodex.panier",
   "name": "Panier",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "NDesumeur",
   "description": "Jeu d'adresse : du basket en 60 secondes dans un gymnase en pixel art. Tire en arrière pour viser, le ballon rebondit vraiment sur le cercle et la planche. Paniers à 2 et 3 points, bonus sans toucher le cercle, séries EN FEU qui comptent double et un panier qui se met à bouger. Meilleur score et plus longue série. Un public qui se lève après tes paniers et applaudit quand tu es EN FEU, un ballon doré qui vaut 3 fois plus, plein écran et jeu à la taille de l'écran. Six ballons à débloquer, chacun avec sa physique.",
   "icon": "icon.png",
@@ -22,5 +22,52 @@
   "sdk": "2.1.0",
   "permissions": [
     "storage"
+  ],
+  "succes": [
+    {
+      "id": "premier",
+      "nom": "Premier panier",
+      "texte": "Finir une première partie"
+    },
+    {
+      "id": "s20",
+      "nom": "Bonne main",
+      "texte": "Marquer 20 points en une partie"
+    },
+    {
+      "id": "s50",
+      "nom": "Meneur de jeu",
+      "texte": "Marquer 50 points en une partie"
+    },
+    {
+      "id": "s100",
+      "nom": "MVP",
+      "texte": "Marquer 100 points en une partie",
+      "cache": true
+    },
+    {
+      "id": "serie10",
+      "nom": "En feu",
+      "texte": "Réussir 10 paniers de suite"
+    },
+    {
+      "id": "mille",
+      "nom": "Mille paniers",
+      "texte": "Réussir 1 000 paniers en tout"
+    }
+  ],
+  "records": [
+    {
+      "id": "score",
+      "nom": "Meilleur score",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "serie",
+      "nom": "Plus longue série",
+      "sens": "haut",
+      "format": "nombre"
+    }
   ]
 }
